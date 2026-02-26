@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export default function LoginPage() {
+    const router = useRouter();
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [emailError, setEmailError] = useState<boolean>(false);
@@ -45,8 +47,9 @@ export default function LoginPage() {
             toast.error(data.error || "Login failed. Please try again.");
             return
         }
-
-        return toast.success(data.message || "Login successful.");
+    
+        toast.success(data.message || "Login successful.");
+        return router.push("/a/dashboard");
     }
 
     return (

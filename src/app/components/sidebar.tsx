@@ -1,11 +1,13 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
-import { Calendar, CalendarClock, Check, Link2, Users2 } from "lucide-react";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
+import { CalendarClock, Check, Link2, LogOut, Users2 } from "lucide-react";
 import Link from "next/link";
 import { ReactNode } from "react";
 
-export default function NewSidebar({ children }: { children: ReactNode }) {
+export default function NewSidebar({ children, active }: { children: ReactNode, active: string }) {
+    const activeClass = "bg-green-600 text-white hover:bg-green-600 hover:text-white";
+
     return (
         <SidebarProvider>
             <Sidebar>
@@ -29,7 +31,7 @@ export default function NewSidebar({ children }: { children: ReactNode }) {
                         <SidebarMenu>
                             <SidebarMenuItem>
                                 <Link href="/a/schedules">
-                                    <SidebarMenuButton>
+                                    <SidebarMenuButton className={active === "schedules" ? activeClass : ""}>
                                         <Link2 size={16} />
                                         <span>Scheduling</span>
                                     </SidebarMenuButton>
@@ -37,7 +39,7 @@ export default function NewSidebar({ children }: { children: ReactNode }) {
                             </SidebarMenuItem>
                             <SidebarMenuItem>
                                 <Link href="/a/schedules">
-                                    <SidebarMenuButton>
+                                    <SidebarMenuButton className={active === "meetings" ? activeClass : ""}>
                                         <CalendarClock size={16} />
                                         <span>Meetings</span>
                                     </SidebarMenuButton>
@@ -51,7 +53,7 @@ export default function NewSidebar({ children }: { children: ReactNode }) {
                         <SidebarMenu>
                             <SidebarMenuItem>
                                 <Link href="/a/schedules">
-                                    <SidebarMenuButton>
+                                    <SidebarMenuButton className={active === "user_management" ? activeClass : ""}>
                                         <Users2 size={16} />
                                         <span>User Management</span>
                                     </SidebarMenuButton>
@@ -60,6 +62,18 @@ export default function NewSidebar({ children }: { children: ReactNode }) {
                         </SidebarMenu>
                     </SidebarGroup>
                 </SidebarContent>
+                <SidebarFooter>
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <Link href="/api/auth/logout">
+                                <SidebarMenuButton>
+                                    <LogOut size={16} />
+                                    <span>Log out</span>
+                                </SidebarMenuButton>
+                            </Link>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarFooter>
             </Sidebar>
             <SidebarInset>
                 <div>

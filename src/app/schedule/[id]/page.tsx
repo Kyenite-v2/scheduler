@@ -20,17 +20,14 @@ function isNumberArray(value: unknown): value is number[] {
 }
 
 function normalizeWeek(week: unknown): number[] {
-    // already number[]
     if (isNumberArray(week)) return week;
 
-    // string[] -> number[]
     if (Array.isArray(week) && week.every((v) => typeof v === "string")) {
         return week
             .map((v) => Number(v))
             .filter((n) => Number.isFinite(n));
     }
 
-    // other jsonb shapes => empty
     return [];
 }
 
@@ -39,11 +36,11 @@ export default async function SchedulePage({ params }: { params: { id: string } 
 
     const { data: schedule } = await supabase
         .from("schedules")
-        .select("id, title, slots, week")
+        .select("id, title, slots, week, enabled")
         .eq("id", params.id)
         .maybeSingle();
 
-    if (!schedule) return <NotFound />;
+    if (!schedule || schedule.enabled === false) return <NotFound />;
 
     const { data: times } = await supabase
         .from("time")

@@ -5,6 +5,8 @@ import { createSupabaseServerClient } from "@/supabase/server";
 type ScheduleData = {
     id: string;
     title: string;
+    date_start: Date;
+    date_end: Date;
     slots: number;
     week: number[];
 };
@@ -31,26 +33,29 @@ function normalizeWeek(week: unknown): number[] {
     return [];
 }
 
-export default async function SchedulePage({ params }: { params: { id: string } }) {
+export default async function SchedulePage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     const supabase = await createSupabaseServerClient();
 
     const { data: schedule } = await supabase
         .from("schedules")
-        .select("id, title, slots, week, enabled")
-        .eq("id", params.id)
+        .select("id, title, date_start, date_end, slots, week, enabled")
+        .eq("id", id)
         .maybeSingle();
 
-    if (!schedule || schedule.enabled === false) return <NotFound />;
+    if (!schedule || !schedule.enabled) return <NotFound />;
 
     const { data: times } = await supabase
         .from("time")
         .select("id, start_time, end_time")
-        .eq("schedule_id", params.id)
+        .eq("schedule_id", id)
         .order("start_time", { ascending: true });
 
     const fixedSchedule: ScheduleData = {
         id: schedule.id,
         title: schedule.title,
+        date_start: schedule.date_start,
+        date_end: schedule.date_end,
         slots: schedule.slots,
         week: normalizeWeek((schedule as { week: unknown }).week),
     };

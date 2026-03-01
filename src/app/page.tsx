@@ -44,7 +44,7 @@ export default function Home() {
       </section>
 
       <footer className="py-6 text-center text-green-200 text-sm border-t border-green-600/30">
-        © {new Date().getFullYear()} Magsaysay College. All rights reserved.
+        © {new Date().getFullYear()} Kenneth Medel. All rights reserved.
       </footer>
     </main>
   );

@@ -1,12 +1,62 @@
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from "@/components/ui/sidebar";
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarInset,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarProvider,
+} from "@/components/ui/sidebar";
 import { CalendarClock, Check, Link2, LogOut, Users2 } from "lucide-react";
 import Link from "next/link";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
-export default function NewSidebar({ children, active }: { children: ReactNode, active: string }) {
+export default function NewSidebar({
+    children,
+    active,
+}: {
+    children: ReactNode;
+    active: string;
+}) {
     const activeClass = "bg-green-600 text-white hover:bg-green-600 hover:text-white";
+
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [loadingRole, setLoadingRole] = useState(true);
+
+    useEffect(() => {
+        const fetchRole = async () => {
+            try {
+                const res = await fetch("/api/role", { method: "GET" });
+
+                // if not logged in, just treat as not admin
+                if (!res.ok) {
+                    setIsAdmin(false);
+                    return;
+                }
+
+                const data: { role?: string | null } = await res.json();
+                setIsAdmin(data.role === "admin");
+            } catch (err) {
+                console.error("Failed to fetch role:", err);
+                setIsAdmin(false);
+            } finally {
+                setLoadingRole(false);
+            }
+        };
+
+        fetchRole();
+    }, []);
+
+    // Optional: avoid flicker until role is known
+    // if (loadingRole) return null;
 
     return (
         <SidebarProvider>
@@ -17,6 +67,7 @@ export default function NewSidebar({ children, active }: { children: ReactNode, 
                             <AvatarImage src="/logo.png" />
                             <AvatarFallback>SC</AvatarFallback>
                         </Avatar>
+
                         <div className="text-lg text-green-600 font-medium flex items-center gap-2">
                             Scheduler
                             <Badge className="bg-green-600 text-white">
@@ -25,6 +76,7 @@ export default function NewSidebar({ children, active }: { children: ReactNode, 
                         </div>
                     </div>
                 </SidebarHeader>
+
                 <SidebarContent>
                     <SidebarGroup>
                         <SidebarGroupLabel>General</SidebarGroupLabel>
@@ -37,8 +89,9 @@ export default function NewSidebar({ children, active }: { children: ReactNode, 
                                     </SidebarMenuButton>
                                 </Link>
                             </SidebarMenuItem>
+
                             <SidebarMenuItem>
-                                <Link href="/a/schedules">
+                                <Link href="/a/meetings">
                                     <SidebarMenuButton className={active === "meetings" ? activeClass : ""}>
                                         <CalendarClock size={16} />
                                         <span>Meetings</span>
@@ -48,20 +101,23 @@ export default function NewSidebar({ children, active }: { children: ReactNode, 
                         </SidebarMenu>
                     </SidebarGroup>
 
-                    <SidebarGroup>
-                        <SidebarGroupLabel>Administrative</SidebarGroupLabel>
-                        <SidebarMenu>
-                            <SidebarMenuItem>
-                                <Link href="/a/schedules">
-                                    <SidebarMenuButton className={active === "user_management" ? activeClass : ""}>
-                                        <Users2 size={16} />
-                                        <span>User Management</span>
-                                    </SidebarMenuButton>
-                                </Link>
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-                    </SidebarGroup>
+                    {isAdmin && (
+                        <SidebarGroup>
+                            <SidebarGroupLabel>Administrative</SidebarGroupLabel>
+                            <SidebarMenu>
+                                <SidebarMenuItem>
+                                    <Link href="/a/user_management">
+                                        <SidebarMenuButton className={active === "user_management" ? activeClass : ""}>
+                                            <Users2 size={16} />
+                                            <span>User Management</span>
+                                        </SidebarMenuButton>
+                                    </Link>
+                                </SidebarMenuItem>
+                            </SidebarMenu>
+                        </SidebarGroup>
+                    )}
                 </SidebarContent>
+
                 <SidebarFooter>
                     <SidebarMenu>
                         <SidebarMenuItem>
@@ -75,11 +131,10 @@ export default function NewSidebar({ children, active }: { children: ReactNode, 
                     </SidebarMenu>
                 </SidebarFooter>
             </Sidebar>
+
             <SidebarInset>
-                <div>
-                    {children}
-                </div>
+                <div>{children}</div>
             </SidebarInset>
         </SidebarProvider>
-    )
+    );
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/supabase/server";
+import { createSendEmail } from "@/lib/email";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -24,12 +25,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { scheduleId, date, timeId, name, email } = body as {
+  const { scheduleId, date, timeId, name, email, timeText, title } = body as {
     scheduleId?: string;
     date?: string;
     timeId?: number;
     name?: string;
     email?: string;
+    timeText?: string;
+    title?: string;
   };
 
   if (!scheduleId || !date || !timeId || !name || !email) {
@@ -58,5 +61,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  try {
+    await createSendEmail(name, email, title as string, date, timeText as string);
+  } catch (e) {
+    return NextResponse.json({ error: "Appointment scheduled successfully!" });
+  }
   return NextResponse.json({ message: "Appointment scheduled successfully!" });
+}
+
+export async function  PUT(request: Request) {
+  const { id, enabled } = await request.json();
+
+  const supabase = await createSupabaseServerClient();
+
+  const { error } = await supabase.from("schedules").update({enabled}).eq("id", id);
+  if(error) {
+    return NextResponse.json({ error: "There is a problem in updating the schedule." }, { status: 401 });
+  }
+
+  return NextResponse.json({ message: "Updated successfully!" });
 }

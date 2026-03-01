@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
     Dialog,
     DialogContent,
@@ -16,12 +17,15 @@ import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 type ScheduleProps = {
     id: string;
     title: string;
+    date_start: Date;
+    date_end: Date;
     slots: number;
-    week: number[]; // values 0-6
+    week: number[];
 };
 
 type TimeData = {
@@ -35,13 +39,8 @@ type CountRow = {
     total: number;
 };
 
-type CountsApiResponse =
-    | { data: CountRow[] }
-    | { error: string };
-
-type PostApiResponse =
-    | { message: string }
-    | { error: string };
+type CountsApiResponse = { data: CountRow[] } | { error: string };
+type PostApiResponse = { message: string } | { error: string };
 
 function toDateKey(d: Date): string {
     return d.toISOString().slice(0, 10);
@@ -59,6 +58,11 @@ function isPostApiResponse(x: unknown): x is PostApiResponse {
     return "message" in obj || "error" in obj;
 }
 
+function parseDateOnly(yyyyMmDd: string) {
+    const [y, m, d] = yyyyMmDd.split("-").map(Number);
+    return new Date(y, m - 1, d);
+}
+
 export default function Scheduler({
     schedule,
     times = [],
@@ -66,20 +70,29 @@ export default function Scheduler({
     schedule?: ScheduleProps;
     times?: TimeData[];
 }) {
+    const router = useRouter();
     const [invalidEmail, setInvalidEmail] = useState(false);
     const [counts, setCounts] = useState<Record<number, number>>({});
     const [loadingCounts, setLoadingCounts] = useState(false);
+
+    // ✅ prevent double submit
+    const [submitting, setSubmitting] = useState(false);
+
+    // optional: control dialog open so we can disable closing while submitting
+    const [formOpen, setFormOpen] = useState(false);
 
     const [formData, setFormData] = useState<{
         date: Date | undefined;
         time: number | null;
         name: string;
         email: string;
+        timeText: string;
     }>({
         date: undefined,
         time: null,
         name: "",
         email: "",
+        timeText: ""
     });
 
     const timeCount = times.length;
@@ -88,19 +101,19 @@ export default function Scheduler({
         return Math.floor(schedule.slots / timeCount);
     }, [schedule?.slots, timeCount]);
 
+    // ✅ load counts when date changes (show skeleton while loading)
     useEffect(() => {
         if (!schedule?.id || !formData.date) return;
 
-        const controller = new AbortController();
         const dateKey = toDateKey(formData.date);
 
-        (async () => {
+        const fetchCounts = async () => {
             try {
                 setLoadingCounts(true);
+                setCounts({}); // clear old counts so skeleton shows cleanly
 
                 const res = await fetch(
-                    `/api/schedule?scheduleId=${encodeURIComponent(schedule.id)}&date=${encodeURIComponent(dateKey)}`,
-                    { signal: controller.signal }
+                    `/api/schedule?scheduleId=${encodeURIComponent(schedule.id)}&date=${encodeURIComponent(dateKey)}`
                 );
 
                 const json: unknown = await res.json();
@@ -122,21 +135,20 @@ export default function Scheduler({
 
                 setCounts(map);
             } catch (e) {
-                // ignore abort
-                if (e instanceof DOMException && e.name === "AbortError") return;
-
                 setCounts({});
-                const msg = e instanceof Error ? e.message : "Failed to load slot availability";
-                toast.error(msg);
+                toast.error(e instanceof Error ? e.message : "Failed to load slot availability");
             } finally {
                 setLoadingCounts(false);
             }
-        })();
+        };
 
-        return () => controller.abort();
+        fetchCounts();
     }, [schedule?.id, formData.date]);
 
     const submitHandler = async () => {
+        // ✅ lock
+        if (submitting) return;
+
         setInvalidEmail(false);
 
         if (!schedule?.id) return toast.error("Schedule not found.");
@@ -164,9 +176,12 @@ export default function Scheduler({
             timeId: formData.time,
             name: formData.name.trim(),
             email: formData.email.trim().toLowerCase(),
+            timeText: formData.timeText.trim()
         };
 
         try {
+            setSubmitting(true);
+
             const res = await fetch("/api/schedule", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -176,11 +191,13 @@ export default function Scheduler({
             const json: unknown = await res.json();
 
             if (!isPostApiResponse(json)) {
-                return toast.error("Unexpected server response.");
+                toast.error("Unexpected server response.");
+                return;
             }
 
             if (!res.ok) {
-                return toast.error("error" in json ? json.error : "An error occurred while scheduling your appointment.");
+                toast.error("error" in json ? json.error : "An error occurred while scheduling your appointment.");
+                return;
             }
 
             toast.success("message" in json ? json.message : "Appointment scheduled successfully!");
@@ -188,14 +205,22 @@ export default function Scheduler({
                 ...prev,
                 [formData.time as number]: (prev[formData.time as number] ?? 0) + 1,
             }));
+
+            setFormOpen(false);
+            setFormData((prev) => ({ ...prev, name: "", email: "" }));
+
+            router.push(schedule.id + "/confirmation_page");
         } catch (e) {
-            const msg = e instanceof Error ? e.message : "Network error";
-            toast.error(msg);
+            toast.error(e instanceof Error ? e.message : "Network error");
+        } finally {
+            setSubmitting(false);
         }
     };
 
     function selectDateHandler(d: Date | undefined) {
+        // ✅ clear time selection to avoid selecting old slot
         setFormData((prev) => ({ ...prev, date: d, time: null }));
+
         if (d) {
             setTimeout(() => {
                 document.getElementById("time")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -238,10 +263,6 @@ export default function Scheduler({
         );
     }
 
-    // IMPORTANT:
-    // Your current Calendar disabled={[{ dayOfWeek: schedule.week }]} DISABLES those days.
-    // If schedule.week contains DISABLED DAYS (e.g. [0,6]) keep it.
-    // If schedule.week contains ALLOWED DAYS (e.g. [1,2,3,4,5]) then invert the logic.
     const disabledDays = schedule.week ?? [];
 
     return (
@@ -271,9 +292,14 @@ export default function Scheduler({
                         <Calendar
                             className="w-full h-auto"
                             mode="single"
+                            defaultMonth={parseDateOnly(String(schedule.date_start).slice(0, 10) || schedule.date_start.toString())}
                             selected={formData.date}
                             onSelect={selectDateHandler}
-                            disabled={[{ dayOfWeek: disabledDays }]}
+                            disabled={[
+                                { dayOfWeek: schedule.week },
+                                { before: schedule.date_start },
+                                { after: schedule.date_end },
+                            ]}
                         />
                     </div>
 
@@ -297,48 +323,75 @@ export default function Scheduler({
                                 </div>
                             ) : (
                                 <div className="flex-1 space-y-4 overflow-auto select-none pr-1">
-                                    {times.map((time) => {
-                                        const taken = counts[time.id] ?? 0;
-                                        const isFull = perTimeCap ? taken >= perTimeCap : false;
-                                        const remaining = perTimeCap ? Math.max(perTimeCap - taken, 0) : null;
+                                    {/* ✅ skeleton while counts loading */}
+                                    {loadingCounts ? (
+                                        <>
+                                            {Array.from({ length: Math.min(times.length, 6) }).map((_, i) => (
+                                                <div key={i} className="rounded-2xl border bg-white p-4 space-y-2">
+                                                    <Skeleton className="h-5 w-44" />
+                                                    <Skeleton className="h-4 w-28" />
+                                                </div>
+                                            ))}
+                                        </>
+                                    ) : (
+                                        <>
+                                            {times.map((time) => {
+                                                const taken = counts[time.id] ?? 0;
+                                                const isFull = perTimeCap ? taken >= perTimeCap : false;
+                                                const remaining = perTimeCap ? Math.max(perTimeCap - taken, 0) : null;
 
-                                        // ✅ No "available" column in DB, so selectable = not full
-                                        const isSelectable = !isFull;
+                                                const isSelectable = !isFull; // only if not full
+                                                const isSelected = time.id === formData.time;
 
-                                        const isSelected = time.id === formData.time;
-
-                                        return (
-                                            <div
-                                                key={time.id}
-                                                className={[
-                                                    "py-4 rounded-2xl border text-center font-medium",
-                                                    isSelectable
-                                                        ? isSelected
-                                                            ? "bg-green-100 text-green-600 border-green-600 cursor-pointer"
-                                                            : "bg-gray-200 text-gray-900 cursor-pointer"
-                                                        : "bg-zinc-100 text-zinc-400 cursor-not-allowed",
-                                                ].join(" ")}
-                                                onClick={() => {
-                                                    if (!isSelectable) return;
-                                                    setFormData((prev) => ({ ...prev, time: prev.time === time.id ? null : time.id }));
-                                                }}
-                                            >
-                                                {time.start_time} - {time.end_time}
-                                                {perTimeCap ? (
-                                                    <div className="mt-1 text-xs font-normal">
-                                                        {isFull ? "Full" : `${remaining} slot(s) left`}
+                                                return (
+                                                    <div
+                                                        key={time.id}
+                                                        className={[
+                                                            "py-4 rounded-2xl border text-center font-medium transition",
+                                                            isSelectable
+                                                                ? isSelected
+                                                                    ? "bg-green-100 text-green-600 border-green-600 cursor-pointer"
+                                                                    : "bg-gray-200 text-gray-900 cursor-pointer"
+                                                                : "bg-zinc-100 text-zinc-400 cursor-not-allowed",
+                                                        ].join(" ")}
+                                                        onClick={() => {
+                                                            if (!isSelectable) return;
+                                                            if (loadingCounts) return;
+                                                            setFormData((prev) => ({
+                                                                ...prev,
+                                                                time: prev.time === time.id ? null : time.id,
+                                                                timeText: prev.time === time.id ? "" : `${time.start_time.slice(0, 5)} - ${time.end_time.slice(0, 5)}`
+                                                            }));
+                                                        }}
+                                                    >
+                                                        {time.start_time.slice(0, 5)} - {time.end_time.slice(0, 5)}
+                                                        {perTimeCap ? (
+                                                            <div className="mt-1 text-xs font-normal">
+                                                                {isFull ? "Full" : `${remaining} slot(s) left`}
+                                                            </div>
+                                                        ) : null}
                                                     </div>
-                                                ) : null}
-                                            </div>
-                                        );
-                                    })}
+                                                );
+                                            })}
+                                        </>
+                                    )}
                                 </div>
                             )}
 
                             <div className="pt-4">
-                                <Dialog>
+                                <Dialog
+                                    open={formOpen}
+                                    onOpenChange={(v) => {
+                                        // ✅ prevent closing while submitting
+                                        if (submitting) return;
+                                        setFormOpen(v);
+                                    }}
+                                >
                                     <DialogTrigger asChild>
-                                        <Button className="w-full" disabled={!formData.time || times.length === 0}>
+                                        <Button
+                                            className="w-full"
+                                            disabled={!formData.time || times.length === 0 || loadingCounts || submitting}
+                                        >
                                             Proceed
                                         </Button>
                                     </DialogTrigger>
@@ -358,7 +411,10 @@ export default function Scheduler({
                                                     id="name"
                                                     placeholder="John Doe Y. Dela Cruz"
                                                     value={formData.name}
-                                                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                                                    onChange={(e) =>
+                                                        setFormData((prev) => ({ ...prev, name: e.target.value }))
+                                                    }
+                                                    disabled={submitting}
                                                 />
                                             </div>
 
@@ -368,15 +424,22 @@ export default function Scheduler({
                                                     id="email"
                                                     placeholder="john@example.com"
                                                     value={formData.email}
-                                                    onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                                                    onChange={(e) =>
+                                                        setFormData((prev) => ({ ...prev, email: e.target.value }))
+                                                    }
                                                     aria-invalid={invalidEmail}
+                                                    disabled={submitting}
                                                 />
                                             </div>
                                         </div>
 
                                         <DialogFooter>
-                                            <Button className="w-full" onClick={submitHandler}>
-                                                Submit
+                                            <Button
+                                                className="w-full"
+                                                onClick={submitHandler}
+                                                disabled={submitting}
+                                            >
+                                                {submitting ? "Submitting..." : "Submit"}
                                             </Button>
                                         </DialogFooter>
                                     </DialogContent>
@@ -386,6 +449,10 @@ export default function Scheduler({
                     )}
                 </div>
             </div>
+
+            <footer className="py-6 text-center text-gray-400 text-sm border-t border-gray-600/30">
+                © {new Date().getFullYear()} Kenneth Medel. All rights reserved.
+            </footer>
         </>
     );
 }

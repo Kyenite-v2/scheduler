@@ -28,8 +28,10 @@ export async function proxy(request: NextRequest) {
 
     // 1) Require session
     const {
-        data: { user },
-    } = await supabase.auth.getUser();
+        data,
+    } = await supabase.auth.getClaims();
+
+    const user = data?.claims;
 
     if (!user) {
         const redirect = NextResponse.redirect(new URL("/login", request.url));

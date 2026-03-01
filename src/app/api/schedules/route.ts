@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/supabase/server";
+import { createSupabaseClient } from "@/supabase/client";
 import { NextResponse } from "next/server";
 
 type TimeRow = { start_time: string; end_time: string };
@@ -59,7 +59,7 @@ function rangesOverlap(a: { s: string; e: string }, b: { s: string; e: string })
 
 export async function GET() {
     try {
-        const supabase = await createSupabaseServerClient();
+        const supabase = await createSupabaseClient();
 
         // schedules
         const { data: schedules, error: schedErr } = await supabase
@@ -108,7 +108,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
-        const supabase = await createSupabaseServerClient();
+        const supabase = await createSupabaseClient();
         const body = (await req.json()) as Partial<CreateBody>;
 
         const title = (body.title ?? "").trim();
@@ -184,7 +184,7 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
     try {
-        const supabase = await createSupabaseServerClient();
+        const supabase = await createSupabaseClient();
         const body = (await req.json()) as Partial<PutToggleBody & PutEditBody>;
 
         const id = String(body.id ?? "");
@@ -286,7 +286,7 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
     try {
-        const supabase = await createSupabaseServerClient();
+        const supabase = await createSupabaseClient();
         const { searchParams } = new URL(req.url);
 
         const id = searchParams.get("id");

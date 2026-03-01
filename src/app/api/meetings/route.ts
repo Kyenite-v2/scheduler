@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/supabase/server";
+import { createSupabaseClient } from "@/supabase/client";
 import { NextResponse } from "next/server";
 
 function toYmdLocal(d: Date) {
@@ -10,7 +10,7 @@ function toYmdLocal(d: Date) {
 
 export async function GET(req: Request) {
     try {
-        const supabase = await createSupabaseServerClient();
+        const supabase = await createSupabaseClient();
         const { searchParams } = new URL(req.url);
 
         const scheduleId = searchParams.get("scheduleId") ?? "";

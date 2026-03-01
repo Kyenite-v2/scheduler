@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import NewSidebar from "@/app/components/sidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 type Role = "admin" | "user";
 
@@ -103,11 +104,14 @@ export default function UserManagementPage() {
         <NewSidebar active="user_management">
             <div className="py-4">
                 <div className="py-10 px-8 border-b flex items-center justify-between gap-4 flex-wrap">
-                    <div>
-                        <h1 className="text-2xl font-bold">User Management</h1>
-                        <p className="text-sm text-muted-foreground">
-                            Create users, assign roles, and control who can log in.
-                        </p>
+                    <div className="flex items-center gap-2">
+                        <SidebarTrigger className="md:hidden" />
+                        <div>
+                            <h1 className="text-2xl font-bold">User Management</h1>
+                            <p className="text-sm text-muted-foreground">
+                                Create users, assign roles, and control who can log in.
+                            </p>
+                        </div>
                     </div>
                     <CreateUserDialog onCreated={refresh} />
                 </div>

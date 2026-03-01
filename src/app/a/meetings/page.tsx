@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import MeetingsPdf from "@/app/components/MeetingsPdf";
 import { Button } from "@/components/ui/button";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 type ScheduleOption = {
     id: string;
@@ -168,11 +169,14 @@ export default function MeetingsPage() {
     return (
         <NewSidebar active="meetings">
             <div className="py-4">
-                <div className="py-10 px-8 border-b">
-                    <h1 className="text-2xl font-bold">Meetings</h1>
-                    <p className="text-sm text-muted-foreground">
-                        View appointments grouped by date and time (Calendly-style).
-                    </p>
+                <div className="py-10 px-8 border-b flex items-center gap-2">
+                    <SidebarTrigger className="md:hidden" />
+                    <div>
+                        <h1 className="text-2xl font-bold">Meetings</h1>
+                        <p className="text-sm text-muted-foreground">
+                            View appointments grouped by date and time (Calendly-style).
+                        </p>
+                    </div>
                 </div>
 
                 <div className="p-8 space-y-4">

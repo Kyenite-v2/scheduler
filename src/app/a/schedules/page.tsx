@@ -14,6 +14,7 @@ import { Link, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 /* =======================
    Types
@@ -109,9 +110,12 @@ export default function Sidebar() {
         <NewSidebar active="schedules">
             <div className="py-4">
                 <div className="py-10 px-8 border-b flex items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold">Schedule</h1>
-                        <p className="text-sm text-muted-foreground">View and manage your schedules here.</p>
+                    <div className="flex items-center gap-2">
+                        <SidebarTrigger className="md:hidden" />
+                        <div>
+                            <h1 className="text-2xl font-bold">Schedule</h1>
+                            <p className="text-sm text-muted-foreground">View and manage your schedules here.</p>
+                        </div>
                     </div>
                     <div>
                         <DialogForm
@@ -760,7 +764,7 @@ export function DialogForm({ onCreated }: { onCreated: (created: ScheduleProps) 
                                     mode="single"
                                     selected={formData.date_end}
                                     month={endMonth}
-                                    onMonthChange={(e)=>setEndMonth(e)}
+                                    onMonthChange={(e) => setEndMonth(e)}
                                     onSelect={(date) => setFormData((p) => ({ ...p, date_end: date ?? undefined }))}
                                     disabled={disabledEnd}
                                 />

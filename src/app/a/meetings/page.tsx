@@ -18,6 +18,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import MeetingsPdf from "@/app/components/MeetingsPdf";
+import { Button } from "@/components/ui/button";
 
 type ScheduleOption = {
     id: string;
@@ -189,7 +192,7 @@ export default function MeetingsPage() {
                                     onValueChange={(v) => setScheduleId(v)}
                                     disabled={loadingSchedules || schedules.length === 0}
                                 >
-                                    <SelectTrigger className="w-full sm:w-[320px]">
+                                    <SelectTrigger className="w-full sm:w-50">
                                         <SelectValue placeholder={loadingSchedules ? "Loading schedules..." : "Select schedule"} />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -210,6 +213,20 @@ export default function MeetingsPage() {
                                         <SelectItem value="all">All (All appointments)</SelectItem>
                                     </SelectContent>
                                 </Select>
+
+                                {selectedSchedule && scheduleId && (
+                                    <PDFDownloadLink
+                                        document={<MeetingsPdf selectedSchedule={selectedSchedule} mode={mode} groups={groups} />}
+                                        fileName={`appointments-${selectedSchedule.title}-${mode}.pdf`}
+                                        style={{ textDecoration: "none" }}
+                                    >
+                                        {({ loading }) => (
+                                            <Button disabled={loading || loadingMeetings}>
+                                                {loading ? "Preparing PDF..." : "Download PDF"}
+                                            </Button>
+                                        )}
+                                    </PDFDownloadLink>
+                                )}
                             </div>
                         </CardHeader>
 

@@ -155,8 +155,8 @@ export async function createReminderEmail(
     name: string,
     email: string,
     title: string,
-    date: string, // e.g. "March 2, 2026"
-    time: string  // e.g. "10:00 AM - 10:30 AM"
+    date: string,
+    time: string
 ) {
     const websiteUrl =
         "https://xkteekupeepvexwhboyw.supabase.co/storage/v1/object/public/images/logo.png";
@@ -219,11 +219,11 @@ export async function createReminderEmail(
             <!-- Body -->
             <tr>
               <td style="padding:24px;">
-                <h2 style="margin:0 0 12px 0; font-size:20px; line-height:1.3;">
+                <h2 style="margin:0 0 12px 0; font-size:14px; line-height:1.3;">
                   Hello <strong>${name}</strong>,
                 </h2>
 
-                <p style="margin:0 0 16px 0; font-size:14px; line-height:1.7; color:#374151; text-indent:32px;">
+                <p style="margin:0 0 16px 0; font-size:14px; line-height:1.7; color:#374151; text-indent:32px; text-align: justify;">
                   This is a friendly reminder that <strong>tomorrow</strong> is your scheduled appointment with the Guidance Office of
                   Magsaysay College (Cabubuhan Campus), Cabubuhan, Magsaysay, Misamis Oriental.
                 </p>

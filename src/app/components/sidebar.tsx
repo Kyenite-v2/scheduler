@@ -19,6 +19,7 @@ import { CalendarClock, Check, Link2, LogOut, Users2 } from "lucide-react";
 import Link from "next/link";
 import { ReactNode, useEffect, useState } from "react";
 import Loading from "../loading";
+import { useRouter } from "next/navigation";
 
 export default function NewSidebar({
     children,
@@ -57,7 +58,7 @@ export default function NewSidebar({
 
     // Optional: avoid flicker until role is known
     // if (loadingRole) return null;
-    if(loadingRole) return <Loading />
+    if (loadingRole) return <Loading />
 
     return (
         <SidebarProvider>
@@ -122,12 +123,7 @@ export default function NewSidebar({
                 <SidebarFooter>
                     <SidebarMenu>
                         <SidebarMenuItem>
-                            <Link href="/api/auth/logout">
-                                <SidebarMenuButton>
-                                    <LogOut size={16} />
-                                    <span>Log out</span>
-                                </SidebarMenuButton>
-                            </Link>
+                            <LogoutButton />
                         </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarFooter>
@@ -138,4 +134,21 @@ export default function NewSidebar({
             </SidebarInset>
         </SidebarProvider>
     );
+
+    function LogoutButton() {
+        const router = useRouter();
+
+        const onLogout = async () => {
+            await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+            router.replace("/login");
+            router.refresh(); // helps clear any cached server state
+        };
+
+        return (
+            <SidebarMenuButton onClick={onLogout}>
+                <LogOut size={16} />
+                <span>Log out</span>
+            </SidebarMenuButton>
+        );
+    }
 }

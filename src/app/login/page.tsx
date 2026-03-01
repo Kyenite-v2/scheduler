@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabaseBrowser } from "@/supabase/routeClient";
+import { createSupabaseServerClient } from "@/supabase/server";
 import { useRouter } from "next/navigation";
 import { SubmitEvent, useState } from "react";
 import { toast } from "sonner";
@@ -38,7 +38,9 @@ export default function LoginPage() {
             return;
         }
 
-        const { error } = await supabaseBrowser.auth.signInWithPassword({
+        const supabase = await createSupabaseServerClient();
+
+        const { error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });

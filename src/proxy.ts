@@ -1,9 +1,11 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 type Role = "admin" | "user";
 
 export async function proxy(request: NextRequest) {
+    const cookieStore = await cookies();
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
@@ -12,14 +14,14 @@ export async function proxy(request: NextRequest) {
 
     const supabase = createServerClient(supabaseUrl, supabaseKey, {
         cookies: {
-            getAll() {
-                return request.cookies.getAll();
+            get(name: string) {
+                return cookieStore.get(name)?.value;
             },
-            setAll(cookiesToSet) {
-                // Apply cookie changes to the outgoing response
-                cookiesToSet.forEach(({ name, value, options }) => {
-                    response.cookies.set(name, value, options);
-                });
+            set(name: string, value: string, options: CookieOptions) {
+                cookieStore.set({ name, value, ...options });
+            },
+            remove(name: string, options: CookieOptions) {
+                cookieStore.set({ name, value: "", ...options });
             },
         },
     });

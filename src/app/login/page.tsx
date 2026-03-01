@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createSupabaseServerClient } from "@/supabase/server";
 import { useRouter } from "next/navigation";
 import { SubmitEvent, useState } from "react";
 import { toast } from "sonner";
@@ -38,21 +37,23 @@ export default function LoginPage() {
             return;
         }
 
-        const supabase = await createSupabaseServerClient();
-
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
+        const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, password }),
         });
 
-        if (error) {
-            setPassword("");
-            toast.error(error.message);
-            return;
+        const data = await res.json();
+        if (res.status !== 200 || data.error) {
+            setPassword("")
+            toast.error(data.error || "Login failed. Please try again.");
+            return
         }
 
-        toast.success("Login successful.");
-        router.push("/a/schedules");
+        toast.success(data.message || "Login successful.");
+        return router.push("/a/schedules");
     }
 
     return (

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { createReminderEmail } from "@/lib/email";
+import { createSupabaseServerClient } from "@/supabase/server";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 function getTomorrowDateStringPH(): string {
     const now = new Date();
@@ -42,84 +46,106 @@ function prettyDate(dateStr: string): string {
 }
 
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
-    const secret = searchParams.get("secret");
-    if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    try {
+        const { searchParams } = new URL(request.url);
+        const secret = searchParams.get("secret");
 
-    const supabase = await createSupabaseServerClient();
-    const tomorrow = getTomorrowDateStringPH();
+        // Require secret (more secure than optional)
+        if (!process.env.CRON_SECRET) {
+            return NextResponse.json({ error: "CRON_SECRET is not set" }, { status: 500 });
+        }
+        if (secret !== process.env.CRON_SECRET) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
-    const { data, error } = await supabase
-        .from("appointments")
-        .select(
-            `
-      id,
-      date,
-      name,
-      email,
-      schedules: schedule_id ( title ),
-      time: time_id ( start_time, end_time )
-    `
-        )
-        .eq("date", tomorrow);
+        // Validate env early (common 500 cause)
+        const missing: string[] = [];
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+        if (!process.env.SUPABASE_SERVICE_ROLE_KEY) missing.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+        if (!process.env.SMTP_HOST) missing.push("SMTP_HOST");
+        if (!process.env.SMTP_USER) missing.push("SMTP_USER");
+        if (!process.env.SMTP_PASS) missing.push("SMTP_PASS");
 
-    if (error) {
-        return NextResponse.json(
-            { error: "Failed to fetch appointments", details: error.message },
-            { status: 500 }
+        if (missing.length) {
+            return NextResponse.json({ error: "Missing env vars", missing }, { status: 500 });
+        }
+
+        // Admin client for cron jobs (no cookies/session)
+        const supabase = await createSupabaseServerClient();
+
+        const tomorrow = getTomorrowDateStringPH();
+
+        const { data, error } = await supabase
+            .from("appointments")
+            .select(`
+        id,
+        date,
+        name,
+        email,
+        schedules:schedule_id ( title ),
+        time:time_id ( start_time, end_time )
+      `)
+            .eq("date", tomorrow);
+
+        if (error) {
+            console.error("Supabase fetch error:", error);
+            return NextResponse.json(
+                { error: "Failed to fetch appointments", details: error.message },
+                { status: 500 }
+            );
+        }
+
+        const appointments = data ?? [];
+        if (appointments.length === 0) {
+            return NextResponse.json({
+                ok: true,
+                tomorrow,
+                count: 0,
+                message: "No appointments for tomorrow.",
+            });
+        }
+
+        const results = await Promise.allSettled(
+            appointments.map(async (appt: any) => {
+                const title = appt?.schedules?.title ?? "Appointment";
+                const start = formatTimeHHMM(appt?.time?.start_time ?? "");
+                const end = formatTimeHHMM(appt?.time?.end_time ?? "");
+                const timeRange = start && end ? `${start} - ${end}` : start || end || "";
+
+                await createReminderEmail(
+                    appt.name,
+                    appt.email,
+                    title,
+                    prettyDate(tomorrow),
+                    timeRange
+                );
+
+                return { id: appt.id, email: appt.email };
+            })
         );
-    }
 
-    const appointments = data ?? [];
+        const sent = results.filter(r => r.status === "fulfilled").length;
+        const failed = results.filter(r => r.status === "rejected").length;
 
-    if (appointments.length === 0) {
+        // Log failed reasons to Vercel logs
+        results.forEach((r, i) => {
+            if (r.status === "rejected") {
+                console.error("Email failed:", appointments[i]?.email, r.reason);
+            }
+        });
+
         return NextResponse.json({
             ok: true,
             tomorrow,
-            count: 0,
-            message: "No appointments for tomorrow.",
+            count: appointments.length,
+            sentCount: sent,
+            failedCount: failed,
         });
+    } catch (e: any) {
+        console.error("Route crashed:", e);
+        return NextResponse.json(
+            { error: "Internal Server Error", details: e?.message ?? String(e) },
+            { status: 500 }
+        );
     }
-
-    const results = await Promise.allSettled(
-        appointments.map(async (appt: any) => {
-            const title = appt?.schedules?.title ?? "Appointment";
-            const start = formatTimeHHMM(appt?.time?.start_time ?? "");
-            const end = formatTimeHHMM(appt?.time?.end_time ?? "");
-            const timeRange = start && end ? `${start} - ${end}` : start || end || "";
-
-            await createReminderEmail(
-                appt.name,
-                appt.email,
-                title,
-                prettyDate(tomorrow),
-                timeRange
-            );
-
-            return { id: appt.id, email: appt.email };
-        })
-    );
-
-    const sent = results
-        .map((r, idx) => (r.status === "fulfilled" ? appointments[idx]?.email : null))
-        .filter(Boolean);
-
-    const failed = results
-        .map((r, idx) =>
-            r.status === "rejected"
-                ? { id: appointments[idx]?.id, email: appointments[idx]?.email, reason: String(r.reason) }
-                : null
-        )
-        .filter(Boolean);
-
-    return NextResponse.json({
-        ok: true,
-        tomorrow,
-        count: appointments.length,
-        sentCount: sent.length,
-        failedCount: failed.length,
-        failed,
-    });
 }

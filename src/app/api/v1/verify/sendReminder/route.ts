@@ -74,7 +74,7 @@ export async function GET(request: Request) {
         const supabase = await createSupabaseServerClient();
 
         const tomorrow = getTomorrowDateStringPH();
-
+  
         const { data, error } = await supabase
             .from("appointments")
             .select(`

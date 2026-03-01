@@ -31,28 +31,28 @@ export default function NewSidebar({
     const [isAdmin, setIsAdmin] = useState(false);
     const [loadingRole, setLoadingRole] = useState(true);
 
-    useEffect(() => {
-        const fetchRole = async () => {
-            try {
-                const res = await fetch("/api/role", { method: "GET", credentials: "include" });
+    // useEffect(() => {
+    //     const fetchRole = async () => {
+    //         try {
+    //             const res = await fetch("/api/role", { method: "GET", credentials: "include" });
 
-                if (!res.ok) {
-                    setIsAdmin(false);
-                    return;
-                }
+    //             if (!res.ok) {
+    //                 setIsAdmin(false);
+    //                 return;
+    //             }
 
-                const data: { role?: string | null } = await res.json();
-                setIsAdmin(data.role === "admin");
-            } catch (err) {
-                console.error("Failed to fetch role:", err);
-                setIsAdmin(false);
-            } finally {
-                setLoadingRole(false);
-            }
-        };
+    //             const data: { role?: string | null } = await res.json();
+    //             setIsAdmin(data.role === "admin");
+    //         } catch (err) {
+    //             console.error("Failed to fetch role:", err);
+    //             setIsAdmin(false);
+    //         } finally {
+    //             setLoadingRole(false);
+    //         }
+    //     };
 
-        fetchRole();
-    }, []);
+    //     fetchRole();
+    // }, []);
 
     // Optional: avoid flicker until role is known
     // if (loadingRole) return null;

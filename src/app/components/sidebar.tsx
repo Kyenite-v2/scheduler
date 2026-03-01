@@ -34,9 +34,8 @@ export default function NewSidebar({
     useEffect(() => {
         const fetchRole = async () => {
             try {
-                const res = await fetch("/api/role", { method: "GET" });
+                const res = await fetch("/api/role", { method: "GET", credentials: "include" });
 
-                // if not logged in, just treat as not admin
                 if (!res.ok) {
                     setIsAdmin(false);
                     return;

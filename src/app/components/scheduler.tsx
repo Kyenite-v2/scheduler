@@ -227,7 +227,6 @@ export default function Scheduler({
     };
 
     function selectDateHandler(d: Date | undefined) {
-        // ✅ clear time selection to avoid selecting old slot
         setFormData((prev) => ({ ...prev, date: d, time: null }));
 
         if (d) {

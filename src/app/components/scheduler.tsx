@@ -252,7 +252,7 @@ export default function Scheduler({
                                     className="inline-block mr-2 align-middle"
                                 />
                             </span>
-                            Magsaysay College Entrance Exam Scheduler
+                            Magsaysay College Appointment Scheduler
                         </h1>
                     </div>
                 </header>

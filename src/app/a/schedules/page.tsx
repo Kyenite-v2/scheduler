@@ -712,7 +712,10 @@ export function DialogForm({ onCreated }: { onCreated: (created: ScheduleProps) 
         if (formData.date_start) setEndMonth(formData.date_start);
     }, [formData.date_start]);
 
-    const disabledStart = [{ dayOfWeek: formData.disabledDays }, { before: today() }];
+    const tomorrow = new Date();
+    tomorrow.setDate(today().getDate() + 1);
+
+    const disabledStart = [{ dayOfWeek: formData.disabledDays }, { before: tomorrow }];
     const disabledEnd = [{ dayOfWeek: formData.disabledDays }, { before: formData.date_start ? stripTime(formData.date_start) : today() }];
 
     return (

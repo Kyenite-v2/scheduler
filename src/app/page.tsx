@@ -14,7 +14,7 @@ export default function Home() {
             height={32}
           />
           <span className="font-semibold tracking-wide text-lg">
-            Event Scheduler
+            Appointment Scheduler
           </span>
         </div>
       </header>

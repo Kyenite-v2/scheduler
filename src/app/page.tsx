@@ -1,21 +1,30 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
     <main className="min-h-screen flex flex-col bg-linear-to-br from-green-700 to-green-900 text-white">
 
       <header className="w-full h-16 px-6 flex items-center justify-between bg-green-800/60 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <Image
-            src="/logo.png"
-            alt="Logo"
-            width={32}
-            height={32}
-          />
-          <span className="font-semibold tracking-wide text-lg">
-            Appointment Scheduler
-          </span>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/logo.png"
+              alt="Logo"
+              width={32}
+              height={32}
+            />
+            <span className="font-semibold tracking-wide text-sm md:text-lg truncate">
+              Appointment Scheduler
+            </span>
+          </div>
+
+          <Button className="bg-white text-black hover:bg-gray-50">
+            <Link href={"/login"}>
+              Login
+            </Link>
+          </Button>
         </div>
       </header>
 

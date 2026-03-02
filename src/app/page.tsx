@@ -7,7 +7,7 @@ export default function Home() {
     <main className="min-h-screen flex flex-col bg-linear-to-br from-green-700 to-green-900 text-white">
 
       <header className="w-full h-16 px-6 flex items-center justify-between bg-green-800/60 backdrop-blur">
-        <div className="flex items-center justify-between gap-4">
+        <div className="w-full flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Image
               src="/logo.png"

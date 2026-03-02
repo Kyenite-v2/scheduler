@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { SubmitEvent, useState } from "react";
 import { toast } from "sonner";
@@ -13,52 +14,60 @@ export default function LoginPage() {
     const [password, setPassword] = useState<string>("");
     const [emailError, setEmailError] = useState<boolean>(false);
     const [passwordError, setPasswordError] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(false);
 
     const handleLogin = async (e: SubmitEvent) => {
         e.preventDefault();
         setEmailError(false);
         setPasswordError(false);
+        setLoading(true);
 
-        if (!email) {
-            setEmailError(true);
-            toast.error("Email is required.");
-            return
+        try {
+            if (!email) {
+                setEmailError(true);
+                toast.error("Email is required.");
+                return
+            }
+            if (!password) {
+                setPasswordError(true);
+                toast.error("Password is required.");
+                return
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                setEmailError(true);
+                toast.error("Invalid email format.");
+                return;
+            }
+
+            const res = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await res.json();
+            if (res.status !== 200 || data.error) {
+                setPassword("")
+                toast.error(data.error || "Login failed. Please try again.");
+                return
+            }
+
+            toast.success(data.message || "Login successful.");
+            return router.push("/a/schedules");
+        } catch(e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
         }
-        if (!password) {
-            setPasswordError(true);
-            toast.error("Password is required.");
-            return
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            setEmailError(true);
-            toast.error("Invalid email format.");
-            return;
-        }
-
-        const res = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify({ email, password }),
-        });
-
-        const data = await res.json();
-        if (res.status !== 200 || data.error) {
-            setPassword("")
-            toast.error(data.error || "Login failed. Please try again.");
-            return
-        }
-
-        toast.success(data.message || "Login successful.");
-        return router.push("/a/schedules");
     }
 
     return (
-        <div className="relative py-12 px-4">
+        <div className="relative min-h-100 py-12 pt-24 px-4 space-y-28">
             <form onSubmit={handleLogin}>
                 <Card className="mx-auto max-w-sm">
                     <CardHeader>
@@ -97,12 +106,15 @@ export default function LoginPage() {
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button className="w-full">
-                            Login
+                        <Button className="w-full bg-green-600 hover:bg-green-700" disabled={loading}>
+                            {loading ? <Loader2 className="mx-auto animate-spin" /> : "Sign In"}
                         </Button>
                     </CardFooter>
                 </Card>
             </form>
+            <footer className="border-t text-sm text-muted-foreground text-center p-4">
+                &copy; {new Date().getFullYear()} Kenneth Medel
+            </footer>
         </div>
     )
 }

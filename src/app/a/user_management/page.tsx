@@ -102,13 +102,13 @@ export default function UserManagementPage() {
 
     return (
         <NewSidebar active="user_management">
-            <div className="py-4">
-                <div className="py-10 px-8 border-b flex items-center justify-between gap-4 flex-wrap">
+            <div>
+                <div className="shadow bg-green-600 py-14 px-8 border-b flex items-center justify-between gap-4 flex-wrap">
                     <div className="flex items-center gap-2">
-                        <SidebarTrigger className="md:hidden" />
+                        <SidebarTrigger className="text-white md:hidden" />
                         <div>
-                            <h1 className="text-2xl font-bold">User Management</h1>
-                            <p className="text-sm text-muted-foreground">
+                            <h1 className="text-white text-2xl font-bold">User Management</h1>
+                            <p className="text-sm text-gray-50">
                                 Create users, assign roles, and control who can log in.
                             </p>
                         </div>
@@ -322,7 +322,7 @@ function CreateUserDialog({ onCreated }: { onCreated: () => void }) {
     return (
         <Dialog open={open} onOpenChange={(v) => { if (!saving) setOpen(v); }}>
             <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700">
+                <Button className="bg-white hover:bg-gray-100 text-black">
                     <Plus size={16} className="mr-2" />
                     New User
                 </Button>

@@ -108,13 +108,13 @@ export default function Sidebar() {
 
     return (
         <NewSidebar active="schedules">
-            <div className="py-4">
-                <div className="py-10 px-8 border-b flex items-center justify-between gap-4">
+            <div>
+                <div className="pt-8 bg-green-600 py-10 px-8 border-b flex items-center justify-between gap-4 shadow">
                     <div className="flex items-center gap-2">
                         <SidebarTrigger className="md:hidden" />
                         <div>
-                            <h1 className="text-2xl font-bold">Schedule</h1>
-                            <p className="text-sm text-muted-foreground">View and manage your schedules here.</p>
+                            <h1 className="text-2xl font-bold text-white">Schedule</h1>
+                            <p className="text-sm text-gray-50">View and manage your schedules here.</p>
                         </div>
                     </div>
                     <div>
@@ -127,7 +127,7 @@ export default function Sidebar() {
                 </div>
 
                 <div className="mt-4 p-8">
-                    <h2 className="text-xl font-semibold mb-2">Your Schedules</h2>
+                    <h2 className="text-green-600 text-xl font-semibold mb-2">Your Schedules</h2>
 
                     <div className="space-y-2">
                         {loadingList ? (
@@ -720,7 +720,7 @@ export function DialogForm({ onCreated }: { onCreated: (created: ScheduleProps) 
             <Button
                 variant="outline"
                 size="lg"
-                className="rounded-full border-green-600 text-green-600 hover:bg-green-600 hover:text-white hover:border-white"
+                className="rounded-full border-green-600 text-green-600 hover:bg-gray-100 hover:text-green-700 hover:border-white"
                 onClick={() => setOpen(true)}
             >
                 <Plus size={16} />

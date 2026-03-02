@@ -294,13 +294,13 @@ export default function Scheduler({
                 </div>
             </header>
 
-            <div className="min-h-[calc(100vh-4rem)] flex justify-center items-start sm:items-center px-4 py-6">
+            <div className="bg-green-600 min-h-[calc(100vh-4rem)] flex justify-center items-start sm:items-center px-4 py-6">
                 <div className="relative grid grid-cols-1 md:grid-cols-2 items-start md:items-center gap-6 w-full max-w-5xl min-h-[75vh]">
-                    <div className="shadow p-4 border rounded-2xl h-fit w-full bg-white">
-                        <div className="text-center text-lg font-bold">{schedule.title}</div>
+                    <div className="bg-gray-100 shadow p-4 border rounded-2xl h-fit w-full">
+                        <div className="text-center text-lg font-bold mb-2">{schedule.title}</div>
 
                         <Calendar
-                            className="w-full h-auto"
+                            className="w-full h-auto rounded-xl"
                             mode="single"
                             defaultMonth={parseDateOnly(String(schedule.date_start).slice(0, 10) || schedule.date_start.toString())}
                             selected={formData.date}

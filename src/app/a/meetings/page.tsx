@@ -168,12 +168,12 @@ export default function MeetingsPage() {
 
     return (
         <NewSidebar active="meetings">
-            <div className="py-4">
-                <div className="py-10 px-8 border-b flex items-center gap-2">
+            <div>
+                <div className="bg-green-600 py-14 px-8 border-b flex items-center gap-2 shadow">
                     <SidebarTrigger className="md:hidden" />
                     <div>
-                        <h1 className="text-2xl font-bold">Meetings</h1>
-                        <p className="text-sm text-muted-foreground">
+                        <h1 className="text-white text-2xl font-bold">Meetings</h1>
+                        <p className="text-sm text-gray-50">
                             View appointments grouped by date and time (Calendly-style).
                         </p>
                     </div>

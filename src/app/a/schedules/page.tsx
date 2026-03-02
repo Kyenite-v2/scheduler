@@ -341,7 +341,7 @@ function CardList({
 
         setLoading(true);
         try {
-            const res = await fetch(`/api/schedules?id=${encodeURIComponent(data.id)}`, { method: "DELETE" });
+            const res = await fetch(`/api/schedules`, { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ id: data.id }) });
             const json = await res.json().catch(() => ({}));
             if (!res.ok) return toast.error(json?.error ?? "Failed to delete.");
 

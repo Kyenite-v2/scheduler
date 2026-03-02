@@ -1,4 +1,4 @@
-import { createSupabaseClient } from "@/supabase/client";
+import { createSupabaseServerClient } from "@/supabase/server";
 import { NextResponse } from "next/server";
 
 type TimeRow = { start_time: string; end_time: string };
@@ -59,7 +59,7 @@ function rangesOverlap(a: { s: string; e: string }, b: { s: string; e: string })
 
 export async function GET() {
     try {
-        const supabase = await createSupabaseClient();
+        const supabase = await createSupabaseServerClient();
 
         // schedules
         const { data: schedules, error: schedErr } = await supabase
@@ -108,7 +108,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
-        const supabase = await createSupabaseClient();
+        const supabase = await createSupabaseServerClient();
         const body = (await req.json()) as Partial<CreateBody>;
 
         const title = (body.title ?? "").trim();
@@ -184,7 +184,7 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
     try {
-        const supabase = await createSupabaseClient();
+        const supabase = await createSupabaseServerClient();
         const body = (await req.json()) as Partial<PutToggleBody & PutEditBody>;
 
         const id = String(body.id ?? "");
@@ -197,7 +197,7 @@ export async function PUT(req: Request) {
                 .update({ enabled: body.enabled })
                 .eq("id", id)
                 .select("id, title, date_start, date_end, slots, week, enabled")
-                .maybeSingle();
+                .single();
 
             if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
 
@@ -258,7 +258,7 @@ export async function PUT(req: Request) {
             .update({ title, date_start, date_end, slots, week, enabled })
             .eq("id", id)
             .select("id, title, date_start, date_end, slots, week, enabled")
-            .maybeSingle();
+            .single();
 
         if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
 
@@ -286,14 +286,10 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
     try {
-        const supabase = await createSupabaseClient();
-        const { searchParams } = new URL(req.url);
+        const supabase = await createSupabaseServerClient();
 
-        const id = searchParams.get("id");
+        const { id } = await req.json();
         if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-
-        const { error: timeErr } = await supabase.from("time").delete().eq("schedule_id", id);
-        if (timeErr) return NextResponse.json({ error: timeErr.message }, { status: 500 });
 
         const { error: schedErr } = await supabase.from("schedules").delete().eq("id", id);
         if (schedErr) return NextResponse.json({ error: schedErr.message }, { status: 500 });

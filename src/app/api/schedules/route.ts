@@ -1,15 +1,12 @@
 import { createSupabaseClient } from "@/supabase/client";
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
 type TimeRow = { start_time: string; end_time: string };
 
 type CreateBody = {
     title: string;
     date_start: string; // ISO from client
-    date_end: string; // ISO from client
+    date_end: string;   // ISO from client
     enabled?: boolean;
     disabledDays?: number[]; // 0..6 disabled
     slots: number;
@@ -23,7 +20,7 @@ type PutEditBody = {
     id: string;
     title: string;
     date_start: string; // ISO or YYYY-MM-DD
-    date_end: string; // ISO or YYYY-MM-DD
+    date_end: string;   // ISO or YYYY-MM-DD
     enabled: boolean;
     disabledDays: number[];
     slots: number;
@@ -64,23 +61,29 @@ export async function GET() {
     try {
         const supabase = await createSupabaseClient();
 
+        // schedules
         const { data: schedules, error: schedErr } = await supabase
             .from("schedules")
             .select("id, title, date_start, date_end, slots, week, enabled")
             .order("date_start", { ascending: true });
 
-        if (schedErr) return NextResponse.json({ error: schedErr.message }, { status: 500 });
+        if (schedErr) {
+            return NextResponse.json({ error: schedErr.message }, { status: 500 });
+        }
 
         const ids = (schedules ?? []).map((s) => s.id);
         if (ids.length === 0) return NextResponse.json([], { status: 200 });
 
+        // times
         const { data: times, error: timeErr } = await supabase
             .from("time")
             .select("id, schedule_id, start_time, end_time")
             .in("schedule_id", ids)
             .order("start_time", { ascending: true });
 
-        if (timeErr) return NextResponse.json({ error: timeErr.message }, { status: 500 });
+        if (timeErr) {
+            return NextResponse.json({ error: timeErr.message }, { status: 500 });
+        }
 
         const bySchedule: Record<string, any[]> = {};
         for (const t of times ?? []) {
@@ -147,16 +150,16 @@ export async function POST(req: Request) {
             }
         }
 
+        // ✅ week is ARRAY (disabled days)
         const week = normalizeDisabledDays(body.disabledDays ?? []);
 
         const { data: schedule, error: schedErr } = await supabase
             .from("schedules")
             .insert({ title, date_start, date_end, slots, week, enabled })
             .select("id, title, date_start, date_end, slots, week, enabled")
-            .maybeSingle();
+            .single();
 
         if (schedErr) return NextResponse.json({ error: schedErr.message }, { status: 400 });
-        if (!schedule) return NextResponse.json({ error: "Failed to create schedule" }, { status: 500 });
 
         const { data: insertedTimes, error: timeErr } = await supabase
             .from("time")
@@ -165,7 +168,6 @@ export async function POST(req: Request) {
             .order("start_time", { ascending: true });
 
         if (timeErr) {
-            // rollback schedule best-effort
             await supabase.from("schedules").delete().eq("id", schedule.id);
             return NextResponse.json({ error: timeErr.message }, { status: 400 });
         }
@@ -199,26 +201,13 @@ export async function PUT(req: Request) {
 
             if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
 
-            // IMPORTANT: if 0 rows updated -> wrong id OR blocked by RLS
-            if (!updated) {
-                return NextResponse.json(
-                    { error: "Schedule not found or you don't have permission to update it." },
-                    { status: 404 }
-                );
-            }
-
-            const { data: times, error: timeErr } = await supabase
+            const { data: times } = await supabase
                 .from("time")
                 .select("id, start_time, end_time")
                 .eq("schedule_id", id)
                 .order("start_time", { ascending: true });
 
-            if (timeErr) return NextResponse.json({ error: timeErr.message }, { status: 500 });
-
-            return NextResponse.json(
-                { message: "Updated successfully!", data: { ...updated, time: times ?? [] } },
-                { status: 200 }
-            );
+            return NextResponse.json({ message: "Updated successfully!", data: { ...updated, time: times ?? [] } }, { status: 200 });
         }
 
         // ✅ full edit
@@ -241,6 +230,8 @@ export async function PUT(req: Request) {
         }
 
         const enabled = Boolean(body.enabled);
+
+        // ✅ week is ARRAY (disabled days)
         const week = normalizeDisabledDays(body.disabledDays ?? []);
 
         const timeRows = Array.isArray(body.time) ? body.time : [];
@@ -270,14 +261,6 @@ export async function PUT(req: Request) {
             .maybeSingle();
 
         if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
-
-        // IMPORTANT: if 0 rows updated -> wrong id OR blocked by RLS
-        if (!updated) {
-            return NextResponse.json(
-                { error: "Schedule not found or you don't have permission to update it." },
-                { status: 404 }
-            );
-        }
 
         // replace times for this schedule
         const { error: delErr } = await supabase.from("time").delete().eq("schedule_id", id);
@@ -309,26 +292,11 @@ export async function DELETE(req: Request) {
         const id = searchParams.get("id");
         if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-        // delete times (ok if 0 rows)
         const { error: timeErr } = await supabase.from("time").delete().eq("schedule_id", id);
         if (timeErr) return NextResponse.json({ error: timeErr.message }, { status: 500 });
 
-        // delete schedule and VERIFY it actually deleted by selecting returned row
-        const { data: deletedSchedule, error: schedErr } = await supabase
-            .from("schedules")
-            .delete()
-            .eq("id", id)
-            .select("id")
-            .maybeSingle();
-
+        const { error: schedErr } = await supabase.from("schedules").delete().eq("id", id);
         if (schedErr) return NextResponse.json({ error: schedErr.message }, { status: 500 });
-
-        if (!deletedSchedule) {
-            return NextResponse.json(
-                { error: "Schedule not found or you don't have permission to delete it." },
-                { status: 404 }
-            );
-        }
 
         return NextResponse.json({ ok: true }, { status: 200 });
     } catch (err: any) {

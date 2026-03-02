@@ -145,6 +145,14 @@ export default function Scheduler({
         fetchCounts();
     }, [schedule?.id, formData.date]);
 
+    useEffect(() => {
+        if (!loadingCounts) {
+            setTimeout(() => {
+                document.getElementById("time")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 100);
+        }
+    }, [loadingCounts])
+
     const submitHandler = async () => {
         // ✅ lock
         if (submitting) return;

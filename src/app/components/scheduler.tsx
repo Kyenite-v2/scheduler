@@ -176,7 +176,8 @@ export default function Scheduler({
             timeId: formData.time,
             name: formData.name.trim(),
             email: formData.email.trim().toLowerCase(),
-            timeText: formData.timeText.trim()
+            timeText: formData.timeText.trim(),
+            title: schedule.title
         };
 
         try {
@@ -263,7 +264,16 @@ export default function Scheduler({
         );
     }
 
-    const disabledDays = schedule.week ?? [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    const dateStart = new Date(schedule.date_start);
+    dateStart.setHours(0, 0, 0, 0);
+
+    const minSelectableDate = today >= dateStart ? tomorrow : dateStart;
 
     return (
         <>
@@ -297,7 +307,7 @@ export default function Scheduler({
                             onSelect={selectDateHandler}
                             disabled={[
                                 { dayOfWeek: schedule.week },
-                                { before: schedule.date_start },
+                                { before: minSelectableDate },
                                 { after: schedule.date_end },
                             ]}
                         />

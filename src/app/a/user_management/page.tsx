@@ -20,6 +20,7 @@ import { useEffect, useState } from "react";
 import { Plus, Trash2, Pencil, BadgeCheck, BadgeX } from "lucide-react";
 import NewSidebar from "@/app/components/sidebar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { NextResponse } from "next/server";
 
 type Role = "admin" | "user";
 
@@ -53,8 +54,21 @@ export default function UserManagementPage() {
             const res = await fetch("/api/user-management");
             const json: unknown = await res.json();
 
-            if (!isApiResponse(json)) throw new Error("Unexpected server response.");
-            if (!res.ok || "error" in json) throw new Error("error" in json ? json.error : "Failed to load users");
+            if (!isApiResponse(json)) {
+                throw new Error("Unexpected server response.");
+            }
+
+            // 🔥 Handle 401 first
+            if (res.status === 401) {
+                window.location.href = "/a/schedules";
+                return; // stop execution
+            }
+
+            if (!res.ok || "error" in json) {
+                throw new Error(
+                    "error" in json ? json.error : "Failed to load users"
+                );
+            }
 
             setDisableNonAdminLogin(json.settings.disable_non_admin_login);
             setUsers(json.users);

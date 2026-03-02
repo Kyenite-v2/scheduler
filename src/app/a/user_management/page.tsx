@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, BadgeCheck, BadgeX } from "lucide-react";
 import NewSidebar from "@/app/components/sidebar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -238,7 +238,7 @@ function UserCard({ user, onChanged }: { user: UserRow; onChanged: () => void })
                                 {user.role}
                             </Badge>
                             {!user.active ? <Badge variant="destructive">disabled</Badge> : null}
-                            {user.verified ? <Badge variant="secondary">verified</Badge> : <Badge variant="outline">unverified</Badge>}
+                            {user.verified ? <Badge variant="secondary" className="bg-blue-600 flex flex-wrap gap-2"><BadgeCheck data-icon="inline-start" /> verified</Badge> : <Badge variant="outline" className="flex flex-wrap gap-2"><BadgeX data-icon="inline-start" />unverified</Badge>}
                         </div>
 
                         <div className="text-xs text-muted-foreground mt-1">
